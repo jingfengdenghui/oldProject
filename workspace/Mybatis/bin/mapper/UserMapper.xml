@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+       Copyright 2009-2016 the original author or authors.
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+
+-->
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 接口的全限定名 -->
+<mapper namespace="mapper.UserMapper">
+    <!-- 利用构造器实例化user -->
+  <resultMap type="user" id="UserResult">
+ <!-- 
+  <constructor >
+  <idArg column="name" javaType="string"  />
+  <arg column="password"  javaType="string" />
+  </constructor>
+ --> 
+ <result column="name" jdbcType="VARCHAR" property="name"/>
+ <result column="password" jdbcType="VARCHAR" property="password"/>
+ 
+  </resultMap>
+  <!-- 重复利用的SQL语句 -->
+  <sql id="userClos">
+  name,password 
+  </sql>
+  
+  
+  <!-- select元素
+  id    必须唯一
+  parameterType  传参  类名 或 javabean
+  resultType  类的全命名 
+  resultMap 提供映射
+  flushCache 是否清除缓存
+  useCache 是否使用缓存
+  timeout 超时时间，超时抛出异常，单位秒
+  fetchSize 记录的总个数
+  statementType  使用的statement 值包括"STATEMENT" "PREPARED" "CALLABLE"
+  resultSetType  
+  databaseId      数据库类型
+  resultOrdered   
+  resultSets
+   -->
+   
+     
+  <!-- insert元素
+  id    必须唯一
+  parameterType  传参  类名 或 javabean
+  flushCache 是否清除缓存
+  useCache 是否使用缓存
+  timeout 超时时间，超时抛出异常，单位秒
+  fetchSize 记录的总个数
+  statementType  使用的statement 值包括"STATEMENT" "PREPARED" "CALLABLE"
+  useGeneratedKeys 是否取出数据库自动生成的主键
+  keyProperty 只对insert和update有效 通过useGeneratedKeys返回值或者insert语句的selectKey子元素设置他的键值复合主键逗号隔开（，）
+  keyColumn 主键的列名   复合主键逗号隔开（，）
+  databaseId      数据库类型
+   -->
+   
+   
+   
+   
+  
+<select id="find" parameterType="String" resultType="util.User" flushCache="true" 
+ useCache="true" timeout="1"  fetchSize="10" statementType="PREPARED" resultSetType="FORWARD_ONLY"
+ databaseId="mysql" resultOrdered="false" resultSets="">
+ <!-- 使用重复利用的SQL部分 -->
+    SELECT <include refid="userClos"></include> FROM user WHERE name = #{name} and password=#{password}
+  </select>
+   <!--resultMap="UserResult"是可以换为resultType="user"  -->
+ <select id="getAll"  resultMap="UserResult" databaseId="mysql">
+    SELECT * FROM user 
+  </select>
+  <!-- if -->
+ <select id="findByName"   parameterType="String" resultType="util.User"  databaseId="mysql">
+    SELECT * FROM user where 1=1 <if test="name!=null and name!=''">name like concat('%',#{name},'%')</if>
+    
+    
+    
+  </select>
+
+<!-- 直接使用类名  javabean支持  必须有setter和getter-->
+  <delete id="delete" parameterType="user" databaseId="mysql">
+    DELETE FROM user WHERE name = #{name}
+  </delete>
+<!-- 使用注解传递多个参数   参数名 #{name}为mapper接口中的形参前的@Param("name")注解 -->
+  <insert id="insert"  useGeneratedKeys="false" keyColumn="" keyProperty=""  databaseId="mysql">
+  <selectKey></selectKey>
+  
+    INSERT INTO user
+    ( 
+    name,
+    password
+    )
+    VALUES
+    ( 
+    #{name},
+    #{password}
+    )
+  </insert>
+   <insert id="insertTest"  useGeneratedKeys="true" keyProperty="(id,name)"  databaseId="mysql">
+  <selectKey keyProperty="id" resultType="long" order="BEFORE" >
+  select if(max(id) = null,1,max(id)+3) from test
+  </selectKey>
+  
+    INSERT INTO test
+    ( id,
+    name,
+    age
+    )
+    VALUES
+    ( #{id},
+    #{name},
+    #{age}
+    )
+  </insert>
+<!-- 使用Map传递多个参数  #{name}为key值-->
+  <update id="update" parameterType="map" databaseId="mysql">
+    UPDATE user SET
+    name = #{name},
+    password = #{password}
+    WHERE
+    name = #{name}
+  </update>
+  <!-- choose+trim   pk    set   -->
+ <update id="updateTest"  databaseId="mysql">
+    UPDATE test
+    <!-- 去掉set后面的,
+     <trim prefix="set" prefixOverrides=","></trim>
+      <choose>
+    <when test="name!=null and name!=''">,name=#{name}</when>
+     <when test="age!=0 ">,age=#{age}</when>
+    </choose>
+    -->
+    <set>
+    <if test="name!=null and name!=''">name=#{name}</if>
+     <if test="age!=0 ">age=#{age}</if>    
+    </set>
+    
+    
+    where
+    id = #{id}
+  </update>
+
+ 
+  <!-- 
+   <select id="isUniqueUsername" parameterType="map" resultType="boolean">
+    SELECT (count(*) = 0)
+    FROM user
+    WHERE ((#{userId,jdbcType=BIGINT} IS NOT NULL AND id != #{userId,jdbcType=BIGINT}) OR #{userId,jdbcType=BIGINT} IS
+    NULL) 
+   
+    AND (username = #{username,jdbcType=VARCHAR})
+  </select>
+  
+   -->
+ 
+ <!-- foreach
+ item 
+ index
+ collection   记得@param()  不然可能无法识别
+ open
+ separator
+ close
+  -->
+ <select id="findByNameList"  resultType="util.User"  statementType="PREPARED" 
+ databaseId="mysql" >
+ <!-- 使用重复利用的SQL部分 -->
+    SELECT <include refid="userClos"></include> FROM user WHERE name in 
+    <foreach item="userName" index="index" collection="nameList" open="(" separator="," close=")">
+    #{userName}
+    </foreach>
+  </select>
+ 
+</mapper>
